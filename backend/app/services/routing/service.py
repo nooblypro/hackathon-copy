@@ -50,9 +50,10 @@ class RoutingService:
         # OSRM public server doesn't natively support all the exclude parameters easily in the driving profile
         # So we fetch routes and let the downstream scoring service penalize highways/tolls if present
 
+        headers = {"User-Agent": "RouteEase/1.0 (hackathon)"}
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
-                resp = await client.get(url, params=params)
+                resp = await client.get(url, params=params, headers=headers)
                 if resp.status_code != 200:
                     logger.error("OSRM API error: %d %s", resp.status_code, resp.text[:500])
                     raise RoutingAPIError(f"OSRM API returned status {resp.status_code}")
