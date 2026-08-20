@@ -15,7 +15,7 @@ class GeocodingService:
     def __init__(self):
         self.base_url = "https://photon.komoot.io/api/"
         self.headers = {
-            "User-Agent": "RouteEase/1.0"
+            "User-Agent": "RouteEase/1.0 (hackathon)"
         }
 
     async def geocode(self, query: str) -> Coordinate:

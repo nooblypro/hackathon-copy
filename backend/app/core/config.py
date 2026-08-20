@@ -63,10 +63,6 @@ class Settings(BaseSettings):
         description="Comma-separated allowed CORS origins",
     )
 
-    ola_maps_api_key: str = Field(
-        default="",
-        description="Ola Maps API key (Krutrim Cloud)",
-    )
 
     @property
     def cors_origin_list(self) -> list[str]:
