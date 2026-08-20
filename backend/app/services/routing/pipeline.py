@@ -89,7 +89,7 @@ class RoutePlanningPipeline:
         metadata.parser_source = parser_source
         logger.info("[%s] Parser source: %s, priority: %s", request_id, parser_source, constraints.priority)
 
-        # ── Step 2: Get route candidates from OSRM ──
+        # ── Step 2: Get route candidates from Ola Maps ──
         logger.info("[%s] Step 2: Fetching route candidates", request_id)
         try:
             raw_routes = await self.routing_service.get_routes(
@@ -99,15 +99,11 @@ class RoutePlanningPipeline:
                 request.destination.longitude,
                 constraints,
             )
-            metadata.routing_source = "osrm"
+            metadata.routing_source = "ola_maps"
             metadata.traffic_source = "unavailable"
         except RoutingAPIError as e:
-            logger.warning("[%s] OSRM API unavailable: %s — using demo fallback", request_id, e)
-            # Return demo response when OSRM is unavailable
-            demo = generate_demo_response(request.challenge_text, constraints)
-            demo.request_id = request_id
-            demo.metadata.parser_source = parser_source
-            return demo
+            logger.error("[%s] Ola Maps API unavailable: %s", request_id, e)
+            raise RouteNotFoundError(request_id=request_id)
 
         if not raw_routes:
             raise RouteNotFoundError(request_id=request_id)
@@ -253,7 +249,7 @@ class RoutePlanningPipeline:
                         available=traffic_avail,
                         level=traffic_level,
                         delay_seconds=traffic_delay,
-                        source="osrm" if traffic_avail else "unavailable",
+                        source="ola_maps" if traffic_avail else "unavailable",
                     ),
                     scores=scores,
                     hazards=hazards,
