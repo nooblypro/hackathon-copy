@@ -3,7 +3,6 @@ Route planning pipeline orchestrator.
 Integrates: challenge parsing → routing → traffic → hazards → places → scoring → ranking → recommendation.
 """
 from __future__ import annotations
-from typing import Optional
 
 import uuid
 
@@ -49,7 +48,7 @@ class RoutePlanningPipeline:
         provider = create_llm_provider()
         self.parser_service = ChallengeParserService(provider)
 
-    async def plan(self, request: RoutePlanRequest, base_constraints: Optional[ConstraintProfile] = None) -> RoutePlanResponse:
+    async def plan(self, request: RoutePlanRequest, base_constraints: ConstraintProfile | None = None) -> RoutePlanResponse:
         """
         Execute the full pipeline:
         1. Validate request
@@ -74,7 +73,8 @@ class RoutePlanningPipeline:
         if base_constraints:
             from app.schemas.constraints import MobilityLevel, Priority, DrivingExperience
             # Merge boolean flags
-            for field, val in base_constraints.model_dump().items():
+            for field in base_constraints.model_fields:
+                val = getattr(base_constraints, field)
                 if isinstance(val, bool) and val:
                     setattr(constraints, field, True)
             # Merge enums if non-default
@@ -88,7 +88,7 @@ class RoutePlanningPipeline:
         metadata.parser_source = parser_source
         logger.info("[%s] Parser source: %s, priority: %s", request_id, parser_source, constraints.priority)
 
-        # ── Step 2: Get route candidates from Ola Maps ──
+        # ── Step 2: Get route candidates from OSRM ──
         logger.info("[%s] Step 2: Fetching route candidates", request_id)
         try:
             raw_routes = await self.routing_service.get_routes(
@@ -98,11 +98,15 @@ class RoutePlanningPipeline:
                 request.destination.longitude,
                 constraints,
             )
-            metadata.routing_source = "ola_maps"
+            metadata.routing_source = "osrm"
             metadata.traffic_source = "unavailable"
         except RoutingAPIError as e:
-            logger.error("[%s] Ola Maps API unavailable: %s", request_id, e)
-            raise RouteNotFoundError(request_id=request_id)
+            logger.warning("[%s] OSRM API unavailable: %s — using demo fallback", request_id, e)
+            # Return demo response when OSRM is unavailable
+            demo = generate_demo_response(request.challenge_text, constraints)
+            demo.request_id = request_id
+            demo.metadata.parser_source = parser_source
+            return demo
 
         if not raw_routes:
             raise RouteNotFoundError(request_id=request_id)
@@ -248,7 +252,7 @@ class RoutePlanningPipeline:
                         available=traffic_avail,
                         level=traffic_level,
                         delay_seconds=traffic_delay,
-                        source="ola_maps" if traffic_avail else "unavailable",
+                        source="osrm" if traffic_avail else "unavailable",
                     ),
                     scores=scores,
                     hazards=hazards,

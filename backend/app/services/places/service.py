@@ -13,18 +13,7 @@ from app.schemas.pitstops import Pitstop
 
 logger = get_logger("places")
 
-# Maps our category names to Ola Maps types (approximate)
-CATEGORY_TO_OLA_TYPES: dict[str, list[str]] = {
-    "restroom": ["restroom", "toilet"],
-    "pharmacy": ["pharmacy"],
-    "hospital": ["hospital", "clinic"],
-    "fuel": ["gas_station", "fuel"],
-    "ev_charging": ["ev_charging", "charging_station"],
-    "cafe": ["cafe", "restaurant", "food"],
-    "rest_area": ["rest_area"],
-}
-
-# Keep Overpass tags for fallback
+# Maps our category names to Overpass API tags
 CATEGORY_TO_TAGS: dict[str, list[str]] = {
     "restroom": ['node["amenity"="toilets"]'],
     "pharmacy": ['node["amenity"="pharmacy"]'],
@@ -37,11 +26,10 @@ CATEGORY_TO_TAGS: dict[str, list[str]] = {
 
 
 class PlacesService:
-    """Searches for pitstops using Ola Maps API with Overpass fallback."""
+    """Searches for pitstops using Overpass API."""
 
     def __init__(self):
         self.settings = get_settings()
-        self.base_url = "https://api.olamaps.io/places/v1/nearbysearch"
 
     async def search_nearby(
         self,
@@ -52,94 +40,8 @@ class PlacesService:
         max_results: int = 5,
     ) -> list[Pitstop]:
         """
-        Search for pitstops near a location using Ola Maps API.
-        Falls back to Overpass if API key is missing or request fails.
+        Search for pitstops near a location using Overpass API.
         """
-        if not self.settings.ola_maps_api_key:
-            logger.warning("Ola Maps API key not configured. Falling back to Overpass for places.")
-            return await self._fallback_search(latitude, longitude, categories, radius_meters, max_results)
-
-        all_pitstops: list[Pitstop] = []
-
-        # Collect unique types
-        included_types: list[str] = []
-        for cat in categories:
-            types = CATEGORY_TO_OLA_TYPES.get(cat, [])
-            for t in types:
-                if t not in included_types:
-                    included_types.append(t)
-
-        if not included_types:
-            return []
-
-        # Ola Maps uses comma separated types
-        types_str = ",".join(included_types)
-
-        params = {
-            "layers": "venue",
-            "types": types_str,
-            "location": f"{latitude},{longitude}",
-            "radius": int(radius_meters),
-            "api_key": self.settings.ola_maps_api_key,
-        }
-
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(self.base_url, params=params)
-                if resp.status_code != 200:
-                    logger.warning("Ola Maps Places API error: %d %s. Falling back to Overpass.", resp.status_code, resp.text[:200])
-                    return await self._fallback_search(latitude, longitude, categories, radius_meters, max_results)
-                
-                data = resp.json()
-                if data.get("status") != "ok":
-                    logger.warning("Ola Maps Places API returned non-ok status: %s. Falling back.", data.get("status"))
-                    return await self._fallback_search(latitude, longitude, categories, radius_meters, max_results)
-
-                predictions = data.get("predictions", [])
-                category_label = categories[0] if categories else "unknown"
-
-                for i, el in enumerate(predictions):
-                    if i >= max_results:
-                        break
-                        
-                    display_name = el.get("name", "Unknown")
-                    geom = el.get("geometry", {}).get("location", {})
-                    lat = geom.get("lat")
-                    lng = geom.get("lng")
-                    
-                    if not lat or not lng:
-                        continue
-                        
-                    all_pitstops.append(
-                        Pitstop(
-                            place_id=str(el.get("place_id", f"ola_{i}")),
-                            name=display_name,
-                            category=category_label,
-                            latitude=float(lat),
-                            longitude=float(lng),
-                            rating=None,
-                            accessibility_info=None,
-                            source="ola_maps",
-                        )
-                    )
-
-                logger.info("Ola Maps API returned %d result(s) for categories %s", len(all_pitstops), categories)
-                return all_pitstops
-
-        except httpx.RequestError as e:
-            logger.warning(f"Ola Maps Places request failed: {e}. Falling back.")
-            return await self._fallback_search(latitude, longitude, categories, radius_meters, max_results)
-
-
-    async def _fallback_search(
-        self,
-        latitude: float,
-        longitude: float,
-        categories: list[str],
-        radius_meters: float,
-        max_results: int,
-    ) -> list[Pitstop]:
-        """Fallback to Overpass API."""
         all_pitstops: list[Pitstop] = []
 
         # Collect unique tags
