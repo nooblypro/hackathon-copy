@@ -74,7 +74,7 @@ class RoutePlanningPipeline:
         if base_constraints:
             from app.schemas.constraints import MobilityLevel, Priority, DrivingExperience
             # Merge boolean flags
-            for field in base_constraints.model_fields:
+            for field in type(base_constraints).model_fields:
                 val = getattr(base_constraints, field)
                 if isinstance(val, bool) and val:
                     setattr(constraints, field, True)
