@@ -4,6 +4,7 @@ Provides a complete deterministic demo response that works WITHOUT any external 
 Data is clearly labelled as demo/seeded.
 """
 from __future__ import annotations
+from typing import Optional
 
 from app.schemas.constraints import (
     ConstraintProfile,
@@ -31,7 +32,7 @@ from app.schemas.routes import (
 
 def generate_demo_response(
     challenge_text: str = "I'm a new driver and highways make me nervous.",
-    constraints: ConstraintProfile | None = None,
+    constraints: Optional[ConstraintProfile] = None,
 ) -> RoutePlanResponse:
     """
     Generate a complete deterministic demo response.

@@ -4,6 +4,7 @@ Supports Ollama (default) with architecture for future providers.
 Includes deterministic fallback parser.
 """
 from __future__ import annotations
+from typing import Optional
 
 import json
 import re
@@ -92,7 +93,7 @@ class LLMProvider(ABC):
 class OllamaProvider(LLMProvider):
     """Ollama local LLM provider."""
 
-    def __init__(self, base_url: str | None = None, model: str | None = None):
+    def __init__(self, base_url: Optional[str] = None, model: Optional[str] = None):
         settings = get_settings()
         self.base_url = (base_url or settings.ollama_base_url).rstrip("/")
         self.model = model or settings.ollama_model
@@ -123,7 +124,7 @@ class OllamaProvider(LLMProvider):
 class LMStudioProvider(LLMProvider):
     """LM Studio local LLM provider (OpenAI-compatible API)."""
 
-    def __init__(self, base_url: str | None = None, model: str | None = None):
+    def __init__(self, base_url: Optional[str] = None, model: Optional[str] = None):
         settings = get_settings()
         self.base_url = (base_url or settings.lm_studio_base_url).rstrip("/")
         self.model = model or settings.lm_studio_model
@@ -157,7 +158,7 @@ class LMStudioProvider(LLMProvider):
 class OpenAIProvider(LLMProvider):
     """OpenAI-compatible LLM provider."""
 
-    def __init__(self, base_url: str | None = None, model: str | None = None, api_key: str | None = None):
+    def __init__(self, base_url: Optional[str] = None, model: Optional[str] = None, api_key: Optional[str] = None):
         settings = get_settings()
         self.base_url = (base_url or settings.openai_base_url).rstrip("/")
         self.model = model or settings.openai_model
@@ -197,7 +198,7 @@ class OpenAIProvider(LLMProvider):
 class GeminiProvider(LLMProvider):
     """Gemini API provider."""
 
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: Optional[str] = None):
         settings = get_settings()
         self.api_key = api_key or settings.gemini_api_key
 
@@ -233,7 +234,7 @@ class GeminiProvider(LLMProvider):
 class OpenRouterProvider(LLMProvider):
     """OpenRouter API provider (uses OpenAI compatible API)."""
 
-    def __init__(self, api_key: str | None = None, model: str | None = None):
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         settings = get_settings()
         self.api_key = api_key or settings.openrouter_api_key
         self.model = model or settings.openrouter_model
@@ -360,7 +361,7 @@ class ChallengeParserService:
     Uses LLM if available, falls back to deterministic parser.
     """
 
-    def __init__(self, provider: LLMProvider | None = None):
+    def __init__(self, provider: Optional[LLMProvider] = None):
         self._provider = provider
 
     async def parse(self, challenge_text: str) -> tuple[ConstraintProfile, str]:
@@ -384,7 +385,7 @@ class ChallengeParserService:
         logger.info("Using fallback parser for challenge text")
         return fallback_parse(challenge_text), "fallback"
 
-    async def _try_llm(self, text: str) -> ConstraintProfile | None:
+    async def _try_llm(self, text: str) -> Optional[ConstraintProfile]:
         """Attempt LLM parsing with retry."""
         assert self._provider is not None
 
@@ -416,7 +417,7 @@ class ChallengeParserService:
         return None
 
     @staticmethod
-    def _extract_json(text: str) -> dict | None:
+    def _extract_json(text: str) -> Optional[dict]:
         """Extract JSON object from LLM response text."""
         # Try direct parse
         text = text.strip()
@@ -444,7 +445,7 @@ class ChallengeParserService:
         return None
 
 
-def create_llm_provider() -> LLMProvider | None:
+def create_llm_provider() -> Optional[LLMProvider]:
     """Factory: create the configured LLM provider, or None if unavailable."""
     settings = get_settings()
     if settings.llm_provider == "ollama":

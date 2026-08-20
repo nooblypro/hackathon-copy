@@ -3,6 +3,7 @@ RouteEase structured error handling.
 All errors follow the standard contract: {"error": {"code": "...", "message": "...", "request_id": "..."}}.
 """
 from __future__ import annotations
+from typing import Optional
 
 from enum import Enum
 
@@ -30,7 +31,7 @@ class RouteEaseError(Exception):
         code: ErrorCode,
         message: str,
         status_code: int = 500,
-        request_id: str | None = None,
+        request_id: Optional[str] = None,
     ):
         self.code = code
         self.message = message
@@ -40,41 +41,41 @@ class RouteEaseError(Exception):
 
 
 class ValidationError(RouteEaseError):
-    def __init__(self, message: str, request_id: str | None = None):
+    def __init__(self, message: str, request_id: Optional[str] = None):
         super().__init__(ErrorCode.VALIDATION_ERROR, message, 422, request_id)
 
 
 class RouteNotFoundError(RouteEaseError):
-    def __init__(self, message: str = "No suitable route could be found.", request_id: str | None = None):
+    def __init__(self, message: str = "No suitable route could be found.", request_id: Optional[str] = None):
         super().__init__(ErrorCode.ROUTE_NOT_FOUND, message, 404, request_id)
 
 
 class RoutingAPIError(RouteEaseError):
-    def __init__(self, message: str, request_id: str | None = None):
+    def __init__(self, message: str, request_id: Optional[str] = None):
         super().__init__(ErrorCode.ROUTING_API_ERROR, message, 502, request_id)
 
 
 class PitstopAPIError(RouteEaseError):
-    def __init__(self, message: str, request_id: str | None = None):
+    def __init__(self, message: str, request_id: Optional[str] = None):
         super().__init__(ErrorCode.PITSTOP_API_ERROR, message, 502, request_id)
 
 
 class LLMError(RouteEaseError):
-    def __init__(self, message: str, request_id: str | None = None):
+    def __init__(self, message: str, request_id: Optional[str] = None):
         super().__init__(ErrorCode.LLM_ERROR, message, 502, request_id)
 
 
 class LLMInvalidResponseError(RouteEaseError):
-    def __init__(self, message: str, request_id: str | None = None):
+    def __init__(self, message: str, request_id: Optional[str] = None):
         super().__init__(ErrorCode.LLM_INVALID_RESPONSE, message, 502, request_id)
 
 
 class ConfigurationError(RouteEaseError):
-    def __init__(self, message: str, request_id: str | None = None):
+    def __init__(self, message: str, request_id: Optional[str] = None):
         super().__init__(ErrorCode.CONFIGURATION_ERROR, message, 500, request_id)
 
 
-def error_response(code: ErrorCode, message: str, status_code: int, request_id: str | None = None) -> JSONResponse:
+def error_response(code: ErrorCode, message: str, status_code: int, request_id: Optional[str] = None) -> JSONResponse:
     """Build a standard error JSON response."""
     return JSONResponse(
         status_code=status_code,

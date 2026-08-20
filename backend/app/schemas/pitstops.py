@@ -2,6 +2,7 @@
 Pitstop schemas.
 """
 from __future__ import annotations
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -15,8 +16,8 @@ class Pitstop(BaseModel):
     latitude: float = Field(..., description="Latitude")
     longitude: float = Field(..., description="Longitude")
     distance_from_route_meters: float = Field(default=0.0, description="Distance from nearest route point")
-    rating: float | None = Field(default=None, description="User rating if available")
-    accessibility_info: str | None = Field(
+    rating: Optional[float] = Field(default=None, description="User rating if available")
+    accessibility_info: Optional[str] = Field(
         default=None,
         description="Accessibility information if available from API. null = unavailable.",
     )

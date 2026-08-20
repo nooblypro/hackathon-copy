@@ -3,6 +3,7 @@ Hazard repository and analysis service.
 Loads hazard data from JSON, performs geographic proximity analysis against route polylines.
 """
 from __future__ import annotations
+from typing import Optional
 
 import json
 import math
@@ -58,7 +59,7 @@ def _haversine_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> flo
 class HazardRepository:
     """Loads and serves hazard data from JSON file."""
 
-    def __init__(self, data_path: str | Path | None = None):
+    def __init__(self, data_path: str | Optional[Path] = None):
         if data_path is None:
             data_path = Path(__file__).resolve().parents[3] / "data" / "hazards.json"
         self._path = Path(data_path)
@@ -93,7 +94,7 @@ class HazardRepository:
 class HazardAnalysisService:
     """Analyzes hazards affecting route polylines."""
 
-    def __init__(self, repository: HazardRepository | None = None):
+    def __init__(self, repository: Optional[HazardRepository] = None):
         self.repo = repository or HazardRepository()
 
     def analyze_route(

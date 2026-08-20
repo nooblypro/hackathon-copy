@@ -3,6 +3,7 @@ Route scoring engine.
 Deterministic, explainable, configurable scoring.
 """
 from __future__ import annotations
+from typing import Optional
 
 from dataclasses import dataclass
 
@@ -128,7 +129,7 @@ class RouteScoringService:
         min_duration: float,
         max_duration: float,
         hazards: list[HazardOnRoute],
-        traffic_delay_seconds: int | None,
+        traffic_delay_seconds: Optional[int],
         traffic_available: bool,
         has_highway: bool = False,
         pitstop_count: int = 0,
@@ -196,7 +197,7 @@ class RouteScoringService:
         self,
         hazards: list[HazardOnRoute],
         has_highway: bool,
-        traffic_delay: int | None,
+        traffic_delay: Optional[int],
         constraints: ConstraintProfile,
     ) -> float:
         """Score comfort based on road quality, highway avoidance, and traffic."""
@@ -221,7 +222,7 @@ class RouteScoringService:
 
         return max(0.0, min(100.0, score))
 
-    def _score_traffic(self, traffic_delay: int | None, traffic_available: bool) -> float:
+    def _score_traffic(self, traffic_delay: Optional[int], traffic_available: bool) -> float:
         """Score traffic: lower delay = higher score."""
         if not traffic_available or traffic_delay is None:
             return 70.0  # Neutral when unknown
@@ -264,7 +265,7 @@ class RouteScoringService:
         hazards: list[HazardOnRoute],
         duration_seconds: float,
         min_duration: float,
-        traffic_delay: int | None,
+        traffic_delay: Optional[int],
         traffic_available: bool,
         has_highway: bool,
         pitstop_count: int,

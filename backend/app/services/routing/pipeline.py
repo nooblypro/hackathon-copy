@@ -3,6 +3,7 @@ Route planning pipeline orchestrator.
 Integrates: challenge parsing → routing → traffic → hazards → places → scoring → ranking → recommendation.
 """
 from __future__ import annotations
+from typing import Optional
 
 import uuid
 
@@ -48,7 +49,7 @@ class RoutePlanningPipeline:
         provider = create_llm_provider()
         self.parser_service = ChallengeParserService(provider)
 
-    async def plan(self, request: RoutePlanRequest, base_constraints: ConstraintProfile | None = None) -> RoutePlanResponse:
+    async def plan(self, request: RoutePlanRequest, base_constraints: Optional[ConstraintProfile] = None) -> RoutePlanResponse:
         """
         Execute the full pipeline:
         1. Validate request
