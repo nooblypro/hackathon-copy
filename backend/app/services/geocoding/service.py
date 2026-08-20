@@ -66,7 +66,9 @@ class GeocodingService:
         search_query = f"{query}, India" if "india" not in query.lower() else query
         
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            # Photon requires a custom user-agent, otherwise it returns 403 Forbidden
+            headers = {"User-Agent": "RouteEase/1.0 (hackathon)"}
+            async with httpx.AsyncClient(timeout=10.0, headers=headers) as client:
                 resp = await client.get(fallback_url, params={"q": search_query, "limit": 1})
                 resp.raise_for_status()
                 data = resp.json()
