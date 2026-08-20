@@ -18,11 +18,24 @@ def setup_logging(debug: bool = False) -> None:
 
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
+    
+    file_handler = logging.FileHandler("backend_debug.log")
+    file_handler.setFormatter(formatter)
 
     root_logger = logging.getLogger("routeease")
     root_logger.setLevel(level)
     root_logger.handlers.clear()
     root_logger.addHandler(handler)
+    root_logger.addHandler(file_handler)
+    
+    # Also capture unhandled exceptions globally
+    def handle_exception(exc_type, exc_value, exc_traceback):
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+        root_logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+    
+    sys.excepthook = handle_exception
 
     # Quiet noisy libraries
     logging.getLogger("httpx").setLevel(logging.WARNING)
